@@ -160,8 +160,8 @@ Entity updates are declared in the `entity` element in the [`meta` block](./#met
 - MAY have a direct child label representing a human-readable label
 
 When a consumer of this specification applies an entity `update`, it:
-- MUST treat a `baseVersion` value other than a positive integer as 0
-- MUST increment the `baseVersion` of its local entity representation by 1 when an update is successfully applied
+- MUST treat a `__version` value other than a positive integer, including a missing value, as 0
+- MUST increment the `__version` of its local entity representation by 1 when an update is successfully applied
 
 ### Identifying entity properties
 
