@@ -3,7 +3,7 @@ title: Entities
 page: entities
 ---
 
-Version 2023.1.0
+Version 2024.1.0
 
 ⚠️ In this specification, collections of Entities are referred to as Datasets. The term "Entity List" is generally recommended instead of "Dataset" in text that is intended for users rather than developers.
 
@@ -14,9 +14,10 @@ This specification is a sub-specification of the [ODK XForms Specification](./).
 ### Versions
 
 | Version  | Changes |
-|----------|-------------------------------------------------------------------------------------------------------------------|
-| 2023.1.0 | Adds Entity updates from form submissions, still with Entities only created or updated on the server              |
-| 2022.1.0 | Adds Entity creation from form submissions, with Entities only created on the server (no offline Entity creation) |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2024.1.0 | Adds metadata to support clients with offline Entity representations. Clients should only apply creates and updates offline for forms with this version or higher. |
+| 2023.1.0 | Adds Entity updates from form submissions, still with Entities only created or updated on the server                                                               |
+| 2022.1.0 | Adds Entity creation from form submissions, with Entities only created on the server (no offline Entity creation)                                                  |
 
 *See section on [Versioning](#versioning)*
 
@@ -38,14 +39,16 @@ This specification is a sub-specification of the [ODK XForms Specification](./).
 
 ### Example of an entity-creating form
 
+*Note: the only change needed to prevent offline entity creation or to support older clients is to change the `entities-version` to 2022.1.0*
+
 ```xml
 <?xml version="1.0"?>
 <h:html xmlns="http://www.w3.org/2002/xforms" xmlns:entities="http://www.opendatakit.org/xforms/entities" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa" xmlns:odk="http://www.opendatakit.org/xforms" xmlns:orx="http://openrosa.org/xforms" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <h:head>
     <h:title>Trees registration</h:title>
-    <model odk:xforms-version="1.0.0" entities:entities-version="2022.1.0">
+    <model odk:xforms-version="1.0.0" entities:entities-version="2024.1.0">
       <instance>
-        <data id="trees_registration" version="2022110901">
+        <data id="trees_registration" version="2025110901">
           <location/>
           <species/>
           <meta>
@@ -70,19 +73,21 @@ This specification is a sub-specification of the [ODK XForms Specification](./).
 
 ### Example of an entity-updating form
 
+*Note: to prevent offline entity updates or to support older clients, change the `entities-version` to 2023.1.0 and omit the `trunkVersion` and `branchId` attributes on `entity`*
+
 ```xml
 <?xml version="1.0"?>
 <h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms" xmlns:entities="http://www.opendatakit.org/xforms/entities">
     <h:head>
         <h:title>Trees circumference update</h:title>
-        <model odk:xforms-version="1.0.0" entities:entities-version="2023.1.0">
+        <model odk:xforms-version="1.0.0" entities:entities-version="2024.1.0">
             <instance>
-                <data id="trees_update" version="20240108145123">
+                <data id="trees_update" version="20250108145123">
                     <tree/>
                     <circumference/>
                     <meta>
                         <instanceID/>
-                        <entity dataset="trees" id="" update="1" baseVersion="">
+                        <entity dataset="trees" id="" update="1" baseVersion="" trunkVersion="" branchId="">
                             <label/>
                         </entity>
                     </meta>
@@ -98,6 +103,9 @@ This specification is a sub-specification of the [ODK XForms Specification](./).
 
             <bind nodeset="/data/meta/entity/@id" type="string" readonly="true()" calculate=" /data/tree "/>
             <bind nodeset="/data/meta/entity/@baseVersion" calculate="instance('trees')/root/item[name= /data/tree ]/__version" type="string" readonly="true()"/>
+            <bind nodeset="/data/meta/entity/@trunkVersion" type="string" calculate="instance('trees')/root/item[name=/data/tree]/__trunkVersion" />
+            <bind nodeset="/data/meta/entity/@branchId" type="string" calculate="instance('trees')/root/item[name=/data/tree]/__branchId" />
+
             <bind nodeset="/data/meta/entity/label" calculate="concat( /data/circumference , &quot;cm &quot;, instance('trees')/root/item[name= /data/tree ]/species)" type="string" readonly="true()"/>
         </model>
         ...
@@ -162,6 +170,15 @@ Entity updates are declared in the `entity` element in the [`meta` block](./#met
 When a consumer of this specification applies an entity `update`, it:
 - MUST treat a `__version` value other than a positive integer, including a missing value, as 0
 - MUST increment the `__version` of its local entity representation by 1 when an update is successfully applied
+
+*Added in spec version 2024.1.0*
+
+The `entity` element for an offline-capable update additionally:
+- MUST have a `branchId` attribute which is populated with a [RFC 4122 version 4 UUID](https://www.rfc-editor.org/rfc/rfc4122) generated by clients with an offline Entity representation.
+  - Clients that do have an offline Entity representation MUST keep the same `branchId` for a given Entity for an entire offline update sequence. They MUST generate a new `branchId` for a new update sequence after receiving a server update.
+  - When a `branchId` attribute is present in a submission, servers SHOULD attempt to process submissions with that same attribute in the correct order
+- MUST have a `trunkVersion` representing the latest version received from the server.
+  - Clients that do have an offline Entity representation MUST use the server-provided `__version` as the `trunkVersion` for an entire offline update sequence after receiving a server update.
 
 ### Identifying entity properties
 
