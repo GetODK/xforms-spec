@@ -149,7 +149,7 @@ Entities are declared in the `entity` element in the [`meta` block](./#metadata)
 - MUST have a `create` attribute populated with a "1" or "true" if the entity should be created
   - Consumers of submissions that create entities MUST interpret "1" or "true" as indications to create an entity and any other value as indication not to create an entity
   - Forms MAY use a bound expression to conditionally create entities (e.g. `<bind nodeset="/data/meta/entity/@create" type="string" calculate="/data/age > 18"/>`)
-- MUST have a direct child `label` representing a human-readable label
+- MUST have a direct child `label` representing a human-readable label. This value MUST be non-blank when trimmed of whitespace.
 
 ### Declaring that a form updates entities
 
